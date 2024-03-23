@@ -4,7 +4,7 @@ RSpec.describe PlayersController, type: :controller do
   let(:team) { create(:team) }
   let(:team2) { create(:team) }
   let(:player) { create(:player, team: team) }
-  let(:player2) { create(:player, team: team) }
+  let(:player2) { create(:player, team: team2) }
   let(:match) { create(:match, team_first: team, team_second: team2) }
   let(:indicator) { create(:indicator) }
 
@@ -34,6 +34,8 @@ RSpec.describe PlayersController, type: :controller do
 
   describe 'GET #check_achievement' do
     let!(:achievement) { create(:achievement, indicator: indicator, match: match, player: player) }
+    let!(:match_player1) { create(:match_player, player: player, match: match, team: team) }
+    let!(:match_player2) { create(:match_player, player: player2, match: match, team: team2) }
 
     it 'expect return true' do
       get :check_achievement, params: { id: player.id, indicator_id: indicator.id }
