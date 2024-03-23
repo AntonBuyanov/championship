@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2023_02_01_053605) do
+ActiveRecord::Schema.define(version: 2024_03_23_124130) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -32,6 +32,18 @@ ActiveRecord::Schema.define(version: 2023_02_01_053605) do
     t.datetime "updated_at", precision: 6, null: false
   end
 
+  create_table "match_players", force: :cascade do |t|
+    t.bigint "team_id", null: false
+    t.bigint "player_id", null: false
+    t.bigint "match_id", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["match_id"], name: "index_match_players_on_match_id"
+    t.index ["player_id", "match_id"], name: "index_match_players_on_player_id_and_match_id", unique: true
+    t.index ["player_id"], name: "index_match_players_on_player_id"
+    t.index ["team_id"], name: "index_match_players_on_team_id"
+  end
+
   create_table "matches", force: :cascade do |t|
     t.bigint "team_first_id", null: false
     t.bigint "team_second_id", null: false
@@ -47,6 +59,7 @@ ActiveRecord::Schema.define(version: 2023_02_01_053605) do
     t.bigint "team_id", null: false
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.integer "role", default: 0, null: false
     t.index ["team_id"], name: "index_players_on_team_id"
   end
 
@@ -59,6 +72,9 @@ ActiveRecord::Schema.define(version: 2023_02_01_053605) do
   add_foreign_key "achievements", "indicators"
   add_foreign_key "achievements", "matches"
   add_foreign_key "achievements", "players"
+  add_foreign_key "match_players", "matches"
+  add_foreign_key "match_players", "players"
+  add_foreign_key "match_players", "teams"
   add_foreign_key "matches", "teams", column: "team_first_id"
   add_foreign_key "matches", "teams", column: "team_second_id"
   add_foreign_key "players", "teams"
