@@ -47,6 +47,35 @@ def create_matches(count: 50_000)
   puts "Created #{count} matches in #{time} seconds"
 end
 
+def create_match_players
+  match_players = []
+
+  time = Benchmark.realtime do
+    Match.includes(team_first: :players, team_second: :players).find_each(batch_size: 2000) do |match|
+      team_first = match.team_first
+      team_second = match.team_second
+
+      percent_players = rand(70..80)
+      composition_first_team = team_first.percentage_players(percent_players)
+      composition_second_team = team_second.percentage_players(percent_players)
+
+      composition_first_team.find_each do |player|
+        match_players << { match_id: match.id, player_id: player.id, team_id: team_first.id,
+                           created_at: Time.current, updated_at: Time.current }
+      end
+
+      composition_second_team.find_each do |player|
+        match_players << { match_id: match.id, player_id: player.id, team_id: team_second.id,
+                           created_at: Time.current, updated_at: Time.current }
+      end
+    end
+
+    MatchPlayer.insert_all(match_players)
+  end
+
+  puts "Created #{match_players.size} match players in #{time} seconds"
+end
+
 def create_indicators
   indicators = [
     "Построение конструктивных атак", "Владение мячом и контроль игры", "Блокирование угловых ударов",
@@ -63,7 +92,7 @@ end
 def create_achievements(count: 10_000)
   achievements = []
   match_ids = Match.pluck(:id)
-  player_ids = Player.limit(20000).pluck(:id)
+  player_ids = MatchPlayer.limit(20000).pluck(:id)
   indicator_ids = Indicator.pluck(:id)
 
   time = Benchmark.realtime do
@@ -84,5 +113,6 @@ end
 create_teams
 create_players
 create_matches
+create_match_players
 create_indicators
 create_achievements
