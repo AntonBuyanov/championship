@@ -13,7 +13,7 @@ def create_teams(count: 5000)
   puts "Created #{count} teams in #{time} seconds"
 end
 
-def create_players(count: 25_000)
+def create_players
   players = []
 
   time = Benchmark.realtime do
@@ -26,54 +26,42 @@ def create_players(count: 25_000)
     Player.insert_all(players)
   end
 
-  puts "Created #{count} players in #{time} seconds"
+  puts "Created #{players.size} players in #{time} seconds"
 end
 
-def create_matches(count: 50_000)
+def create_matches_and_participants(count: 1000)
   matches = []
-  team_ids = Team.pluck(:id)
-
-  time = Benchmark.realtime do
-    count.times do
-      shuffled_teams = team_ids.shuffle.take(2)
-
-      matches << { team_first_id: shuffled_teams.first, team_second_id: shuffled_teams.last,
-                   created_at: Time.current, updated_at: Time.current }
-    end
-
-    Match.insert_all(matches)
-  end
-
-  puts "Created #{count} matches in #{time} seconds"
-end
-
-def create_match_players
   match_players = []
 
   time = Benchmark.realtime do
-    Match.includes(team_first: :players, team_second: :players).find_each(batch_size: 2000) do |match|
-      team_first = match.team_first
-      team_second = match.team_second
+    count.times do |i|
+      shuffled_teams = Team.all.sample(2)
+      team_first = shuffled_teams.first
+      team_second = shuffled_teams.last
 
-      percent_players = rand(70..80)
-      composition_first_team = team_first.percentage_players(percent_players)
-      composition_second_team = team_second.percentage_players(percent_players)
+      match = { id: i, team_first_id: team_first.id, team_second_id: team_second.id,
+                created_at: Time.current, updated_at: Time.current }
+      matches << match
 
-      composition_first_team.find_each do |player|
-        match_players << { match_id: match.id, player_id: player.id, team_id: team_first.id,
+      first_team_percent = rand(70..80)
+      second_team_percent = rand(70..80)
+
+      team_first.percentage_players(first_team_percent).find_each do |player|
+        match_players << { team_id: player.team.id, player_id: player.id, match_id: match[:id],
                            created_at: Time.current, updated_at: Time.current }
       end
 
-      composition_second_team.find_each do |player|
-        match_players << { match_id: match.id, player_id: player.id, team_id: team_second.id,
+      team_second.percentage_players(second_team_percent).find_each do |player|
+        match_players << { team_id: player.team.id, player_id: player.id, match_id: match[:id],
                            created_at: Time.current, updated_at: Time.current }
       end
     end
 
+    Match.insert_all(matches)
     MatchPlayer.insert_all(match_players)
   end
 
-  puts "Created #{match_players.size} match players in #{time} seconds"
+  puts "Created #{matches.size} matches and #{match_players.size} participants of the match in #{time} seconds"
 end
 
 def create_indicators
@@ -112,7 +100,6 @@ end
 
 create_teams
 create_players
-create_matches
-create_match_players
+create_matches_and_participants
 create_indicators
 create_achievements
